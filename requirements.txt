@@ -1,0 +1,9 @@
+streamlit 
+fastapi
+uvicorn 
+langchain 
+langchain-groq 
+pypdf2 
+python-docx 
+openai 
+faiss-cpu
