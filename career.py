@@ -4,6 +4,13 @@ from io import BytesIO
 from PIL import Image
 import time
 
+#sidebar layout
+st.sidebar.title("Smart Career Copilot")
+st.sidebar.button("Home")
+st.sidebar.button("New Chat")
+st.sidebar.button("History")
+
+
 # Page configuration
 st.set_page_config(
     page_title="Smart Career Copilot",
