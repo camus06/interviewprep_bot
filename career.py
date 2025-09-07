@@ -671,3 +671,4 @@ if st.session_state.interview_started:
                     del st.session_state[key]
             st.session_state.jd_provided = False
             st.rerun()
+
