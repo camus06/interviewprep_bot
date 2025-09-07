@@ -1,0 +1,23 @@
+{
+  "Programming Languages": [
+    "python", "java", "c", "c++", "c#", "r", "go", "javascript", "typescript",
+    "php", "ruby", "kotlin", "swift", "scala", "dart"
+  ],
+  "Web Technologies": [
+    "html", "css", "bootstrap", "tailwind", "sass", "jquery"
+  ],
+  "Frameworks / Libraries": [
+    "react", "angular", "vue", "node.js", "express", "django", "flask",
+    "spring", "dotnet", "next.js", "nuxt.js"
+  ],
+  "Databases": [
+    "sql", "mysql", "postgresql", "mongodb", "redis", "oracle"
+  ],
+  "Cloud & DevOps": [
+    "aws", "azure", "gcp", "docker", "kubernetes", "jenkins", "git", "ci/cd"
+  ],
+  "Data Science & AI": [
+    "machine learning", "deep learning", "nlp", "pandas", "numpy",
+    "tensorflow", "pytorch", "scikit-learn"
+  ]
+}
