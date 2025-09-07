@@ -1,0 +1,14 @@
+[
+    {
+        "question":"What is Mission UpSkill India Hackathon by HCL GUVI ABES Edition 2025?",
+        "answer":"The Mission UpSkill India Hackathon is a platform for students to explore, innovate, and push the boundaries of Generative AI. Over the course of the event, participants will engage with real-world challenges spanning healthcare, education, sustainability, fintech, and open innovation. By applying creativity, technical expertise, and collaborative problem-solving, teams will develop impactful AI-powered solutions that address pressing societal needs while gaining hands-on experience in cutting-edge technologies."
+    },
+    {
+        "question": "What is Python?",
+        "answer": "Python is a high-level programming language known for simplicity."
+    },
+    {
+    "question": "What is FastAPI?",
+    "answer": "FastAPI is a modern, high-performance web framework for building APIs with Python."
+    }
+]
