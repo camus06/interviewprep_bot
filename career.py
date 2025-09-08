@@ -188,6 +188,14 @@ if 'sessions' not in st.session_state:
 if 'performance_data' not in st.session_state:
     # Track performance metrics: {date, score, interview_type, questions_answered, completion_rate}
     st.session_state.performance_data = []
+if 'performance_data_added' not in st.session_state:
+    st.session_state.performance_data_added = False
+if 'ai_score_calculated' not in st.session_state:
+    st.session_state.ai_score_calculated = False
+if 'calculated_score' not in st.session_state:
+    st.session_state.calculated_score = 0
+if 'ai_questions_generated' not in st.session_state:
+    st.session_state.ai_questions_generated = False
 
 # Helpers for history management
 def _make_session_title(mode: str, ts: float) -> str:
@@ -234,6 +242,8 @@ def reset_for_new_chat():
     st.session_state.user_answers = []
     st.session_state.interview_mode = None
     st.session_state.questions = []
+    st.session_state.performance_data_added = False
+    st.session_state.ai_score_calculated = False
     st.rerun()
 
 def calculate_interview_score(answers):
@@ -254,9 +264,56 @@ def calculate_interview_score(answers):
     
     return min(int(base_score + quality_bonus), 100)
 
+def calculate_ai_interview_score(answers):
+    """Calculate score using AI evaluation of all answers"""
+    if not answers:
+        return 0
+    
+    # Collect all answered questions
+    answered_questions = [a for a in answers if a.get('answer', '').strip() and not a.get('skipped', False)]
+    if not answered_questions:
+        return 0
+    
+    # Create a comprehensive evaluation prompt
+    all_qa_pairs = "\n\n".join([
+        f"Question: {answer['question']}\nAnswer: {answer['answer']}\nAI Feedback: {answer.get('ai_feedback', 'No feedback available')}"
+        for answer in answered_questions
+    ])
+    
+    scoring_prompt = f"""
+    Based on the following interview questions, answers, and AI feedback, calculate an overall interview score out of 100.
+    
+    {all_qa_pairs}
+    
+    Consider:
+    1. Technical accuracy and depth of knowledge
+    2. Communication clarity and structure
+    3. Use of examples and specific details
+    4. Problem-solving approach
+    5. Overall interview performance
+    
+    Provide ONLY a number between 0-100 as the final score. No explanation needed.
+    """
+    
+    try:
+        response = call_backend_api("/ask", {"question": scoring_prompt})
+        if response:
+            score_text = response.get("answer", "0").strip()
+            # Extract number from response
+            import re
+            score_match = re.search(r'\b(\d{1,3})\b', score_text)
+            if score_match:
+                score = int(score_match.group(1))
+                return min(max(score, 0), 100)  # Ensure score is between 0-100
+    except Exception as e:
+        st.warning(f"AI scoring failed: {e}")
+    
+    # Fallback to mock calculation if AI fails
+    return calculate_interview_score(answers)
+
 def add_performance_data(interview_mode, answers, questions):
     """Add performance data to tracking"""
-    score = calculate_interview_score(answers)
+    score = calculate_ai_interview_score(answers)
     completion_rate = len([a for a in answers if a.get('answer', '').strip() and not a.get('skipped', False)]) / len(questions) if questions else 0
     
     performance_entry = {
@@ -525,27 +582,17 @@ if st.session_state.resume_uploaded and st.session_state.jd_provided:
         
     # Start interview button
     if st.button("Start AI-Powered Interview", use_container_width=True):
-        with st.spinner("Generating personalized interview questions..."):
-            # Get resume text for AI question generation
-            resume_text = ""
-            if resume_file:
-                try:
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{resume_file.name.split('.')[-1]}") as tmp_file:
-                        tmp_file.write(resume_file.getvalue())
-                        tmp_file_path = tmp_file.name
-                    resume_text = parse_resume(tmp_file_path)
-                    os.unlink(tmp_file_path)
-                except:
-                    resume_text = "Resume parsing failed"
-            
-            # Generate AI-powered questions
-            questions = generate_ai_questions(resume_text, job_description, interview_type, question_count)
+        # Start with fallback questions immediately for faster loading
+        questions = get_fallback_questions(interview_type, question_count)
         
         st.session_state.interview_started = True
         st.session_state.interview_mode = interview_type
         st.session_state.questions = questions
         st.session_state.current_question = 0
         st.session_state.user_answers = []
+        st.session_state.performance_data_added = False
+        st.session_state.ai_score_calculated = False
+        st.session_state.ai_questions_generated = False
         st.rerun()
 
 # Section 3: Interview Simulation
@@ -600,19 +647,25 @@ if st.session_state.interview_started:
             st.balloons()
             st.success("Interview completed! Generating your feedback report...")
         
-        # Simulate report generation
-        with st.spinner("Analyzing your responses..."):
-            time.sleep(2)
-        
         # Feedback report
         st.markdown('<h2 class="section-header">Your Feedback Report</h2>', unsafe_allow_html=True)
         
-        # Overall score
-        overall_score = calculate_interview_score(st.session_state.user_answers)
+        # Calculate AI-powered overall score (only once)
+        if not st.session_state.get('ai_score_calculated', False):
+            with st.spinner("Calculating your interview score..."):
+                overall_score = calculate_ai_interview_score(st.session_state.user_answers)
+                st.session_state.ai_score_calculated = True
+                st.session_state.calculated_score = overall_score
+        else:
+            overall_score = st.session_state.get('calculated_score', 0)
+        
+        # Display the score
         st.markdown(f'<div class="card"><h3>Overall Score: {overall_score}/100</h3></div>', unsafe_allow_html=True)
         
-        # Add performance data to tracking
-        add_performance_data(st.session_state.interview_mode, st.session_state.user_answers, st.session_state.questions)
+        # Add performance data to tracking (only once per interview)
+        if not st.session_state.get('performance_data_added', False):
+            add_performance_data(st.session_state.interview_mode, st.session_state.user_answers, st.session_state.questions)
+            st.session_state.performance_data_added = True
         
         # AI-Generated Feedback
         st.markdown("#### AI-Generated Feedback")
@@ -623,37 +676,33 @@ if st.session_state.interview_started:
                 st.markdown(f"**AI Feedback:** {answer_data['ai_feedback']}")
                 st.markdown("---")
         
-        # General Strengths and Improvements
-        st.markdown("#### Overall Assessment")
-        strengths = [
-            "Clear communication style",
-            "Good technical knowledge", 
-            "Effective use of examples",
-            "Structured problem-solving approach"
-        ]
-        for strength in strengths:
-            st.markdown(f"- {strength}")
-        
-        st.markdown("#### Areas for Improvement")
-        improvements = [
-            "Provide more specific metrics in your examples",
-            "Work on conciseness in technical explanations",
-            "Practice more behavioral questions using the STAR method",
-            "Include more details about your personal contribution in team projects"
-        ]
-        for improvement in improvements:
-            st.markdown(f"- {improvement}")
-        
-        # Resources
-        st.markdown("#### Recommended Resources")
-        resources = [
-            "[Tech Interview Handbook](https://www.techinterviewhandbook.org/)",
-            "[Behavioral Questions Cheat Sheet](https://www.themuse.com/advice/star-interview-method)",
-            "[System Design Primer](https://github.com/donnemartin/system-design-primer)",
-            "[LeetCode](https://leetcode.com/) for coding practice"
-        ]
-        for resource in resources:
-            st.markdown(f"- {resource}")
+        # Generate AI-powered overall assessment
+        if st.session_state.user_answers:
+            with st.spinner("Generating overall assessment..."):
+                all_answers = "\n\n".join([
+                    f"Q: {answer['question']}\nA: {answer['answer']}" 
+                    for answer in st.session_state.user_answers 
+                    if not answer.get('skipped', False) and answer.get('answer', '').strip()
+                ])
+                
+                if all_answers:
+                    assessment_prompt = f"""
+                    Based on the following interview responses, provide a comprehensive assessment:
+                    
+                    {all_answers}
+                    
+                    Please provide:
+                    1. Overall strengths demonstrated
+                    2. Key areas for improvement
+                    3. Specific recommendations for better interview performance
+                    4. Relevant learning resources
+                    
+                    Format as a structured assessment with clear sections.
+                    """
+                    
+                    overall_assessment = evaluate_answer_with_ai("Overall Assessment", assessment_prompt)
+                    st.markdown("#### Overall Assessment")
+                    st.markdown(overall_assessment)
         
         # Download report button
         st.download_button(
