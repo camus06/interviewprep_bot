@@ -190,7 +190,7 @@ else:
              st.write(f"{sec}:")
              for item in its:
                 st.write(f"- {item}")
-            st.write(f"Tip: {t}")
+            st.write(f"Suggestion: {t}")
             st.write("______________________________________________________________")
 
 
@@ -212,10 +212,21 @@ else:
     except: pass
     st.write(f"Session {i+1} ({sess['date']}) avg={avg}")
     with st.expander(f"View"):
-     for qi,(a,(s,f,t)) in enumerate(zip(sess["answers"],sess["feedback"])):
-      st.write(f"Q{qi+1}: {sess['questions'][qi]}")
-      st.write(f"Ans:{a}")
-      st.write(f"Scores:{s}")
-      st.write(f"Feedback:{f}")
-      st.write(f"Tips:{t}")
-  else: st.write("no old sessions yet")
+         for qi,(a,(s,f,t)) in enumerate(zip(sess["answers"],sess["feedback"])):
+            st.write(f"Q{qi+1}: {sess['questions'][qi]}")
+            st.write(f"Ans: {a}")
+            st.write("**Scores:**")
+            for k, v in s.items():
+                st.write(f"- {k}: {v} / 10")
+            st.write("**Feedback:**")
+            for sec, its in f.items():
+                st.write(f"{sec}:")
+                for item in its:
+                    st.write(f"- {item}")
+            # Only show tip string t if it is not already in feedback['Tips']
+            tips_in_feedback = f.get("**Tips**", []) if isinstance(f, dict) else []
+            if t and (t not in tips_in_feedback):
+                st.write("**Suggestion:**")
+                st.write(f"- {t}")
+            st.markdown("---")
+  else: st.write("**no old sessions yet**")

@@ -1,0 +1,15 @@
+streamlit 
+fastapi
+uvicorn 
+langchain 
+langchain-groq 
+pypdf2 
+python-docx 
+openai 
+faiss-cpu
+plotly
+pandas
+groq
+rapidfuzz
+python-dotenv
+requests
