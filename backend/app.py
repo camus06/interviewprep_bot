@@ -4,12 +4,21 @@ from pydantic import BaseModel
 from pathlib import Path
 import os 
 from groq import Groq
+from fastapi.middleware.cors import CORSMiddleware
  
 load_dotenv()
 
 from backend.utils import load_faqs,find_answer
 
 app=FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # for testing, allow everything
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
