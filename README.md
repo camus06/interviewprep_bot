@@ -12,7 +12,6 @@ An intelligent interview preparation system that combines AI-powered question ge
 ### 📄 Resume Analysis
 - Parse PDF and DOCX resumes
 - Skill gap analysis comparing resume to job requirements
-- Missing skills identification and recommendations
 
 ### 💬 Real-time AI Feedback
 - Instant evaluation of your answers using AI
